@@ -24,15 +24,24 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, Render health checks)
+  origin: function (origin, callback) {
+    const allowed = [
+      'https://zorovex.vercel.app',
+      'http://localhost:5173'
+    ];
+
+    // allow requests with no origin
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error(`CORS: origin ${origin} not allowed`));
+
+    // allow if origin matches
+    if (allowed.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // instead of throwing error → just block silently
+    return callback(null, false);
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 app.use(express.json({ limit: '10mb' }));
