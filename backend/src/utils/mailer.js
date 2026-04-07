@@ -86,3 +86,32 @@ export const sendLoginEmail = async (email, name) => {
     console.warn(`⚠️ Failed to send login email to ${email}: ${err.message}`);
   }
 };
+
+export const sendPasswordResetEmail = async (email, name, resetUrl) => {
+  try {
+    const transporter = createTransporter();
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM,
+      to: email,
+      subject: '🔑 Reset your Zorovex password',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0f0f0f; color: #fff; padding: 40px; border-radius: 12px;">
+          <h1 style="color: #a78bfa; margin-bottom: 8px;">Password Reset Request 🔑</h1>
+          <p style="color: #e2e8f0; font-size: 16px;">Hi ${name}, we received a request to reset your Zorovex password.</p>
+          <p style="color: #94a3b8; font-size: 14px;">Click the button below to set a new password. This link expires in <strong style="color: #e2e8f0;">15 minutes</strong>.</p>
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="${resetUrl}" style="display: inline-block; padding: 14px 36px; background: linear-gradient(135deg, #7c3aed, #6d28d9); color: #fff; text-decoration: none; border-radius: 10px; font-size: 16px; font-weight: 700;">Reset Password</a>
+          </div>
+          <p style="color: #64748b; font-size: 13px; text-align: center;">If you didn't request this, you can safely ignore this email. Your password won't change.</p>
+          <p style="color: #475569; font-size: 12px; text-align: center; margin-top: 8px; word-break: break-all;">Or copy this link: <a href="${resetUrl}" style="color: #a78bfa;">${resetUrl}</a></p>
+          <p style="color: #a78bfa; font-size: 13px; margin-top: 32px;">— The Zorovex Team</p>
+        </div>
+      `,
+    });
+    console.log(`📧 Password reset email sent to ${email}`);
+  } catch (err) {
+    console.warn(`⚠️ Failed to send reset email to ${email}: ${err.message}`);
+    throw err;
+  }
+};
+

@@ -340,6 +340,16 @@ const Login = () => {
                         </button>
                       </div>
                       {errors.password && <p style={{ fontSize: 12, color: '#f87171', marginTop: 5, marginBottom: 0 }}>{errors.password}</p>}
+                      {tab === 'login' && (
+                        <div style={{ textAlign: 'right', marginTop: 6 }}>
+                          <Link
+                            to="/forgot-password"
+                            style={{ fontSize: 12, color: 'var(--purple-400)', fontWeight: 600, textDecoration: 'none' }}
+                          >
+                            Forgot password?
+                          </Link>
+                        </div>
+                      )}
                     </div>
 
                     {tab === 'register' && (
