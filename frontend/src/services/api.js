@@ -3,7 +3,7 @@ import axios from 'axios';
 // In production (Vercel), VITE_API_URL = 'https://zorovex.onrender.com/api'
 // In local dev, VITE_API_URL is not set, so '/api' is used (Vite proxy handles it)
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: 'https://zorovex.onrender.com/api',
   headers: {
     'Content-Type': 'application/json',
   },
