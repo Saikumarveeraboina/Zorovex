@@ -8,22 +8,41 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Restore session — always re-fetch profile from server to get latest role/isPro
+  // Restore session
   useEffect(() => {
     const storedToken = localStorage.getItem('zorovex_token');
+    const storedUser = localStorage.getItem('zorovex_user');
+    
     if (!storedToken) {
       setLoading(false);
       return;
     }
+
     setToken(storedToken);
-    // Fetch fresh profile (catches role changes, isPro updates, etc.)
+    
+    // If we have stored user, set it immediately to avoid "stuck loading" or "slow login" feeling
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+        setLoading(false);
+        // Still background refresh to ensure isPro etc are up to date
+        authAPI.getProfile().then(res => {
+          setUser(res.data);
+          localStorage.setItem('zorovex_user', JSON.stringify(res.data));
+        }).catch(() => {});
+        return;
+      } catch (err) {
+        localStorage.removeItem('zorovex_user');
+      }
+    }
+
+    // No stored user or parse failed — fetch it
     authAPI.getProfile()
       .then((res) => {
         setUser(res.data);
         localStorage.setItem('zorovex_user', JSON.stringify(res.data));
       })
       .catch(() => {
-        // Token invalid/expired — clear session
         localStorage.removeItem('zorovex_token');
         localStorage.removeItem('zorovex_user');
         setToken(null);

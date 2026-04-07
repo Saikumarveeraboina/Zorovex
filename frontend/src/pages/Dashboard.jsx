@@ -25,11 +25,9 @@ const Dashboard = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <LoadingSpinner fullPage />;
-
   const stats = [
-    { icon: Code2,      label: 'Problems Solved',   value: progressData?.totalCompleted || 0,           color: '#a78bfa', bg: 'rgba(139,92,246,0.12)', link: '/dsa' },
-    { icon: TrendingUp, label: 'Overall Progress',   value: `${progressData?.overallPercentage || 0}%`,  color: '#60a5fa', bg: 'rgba(96,165,250,0.12)',  link: '/dsa' },
+    { icon: Code2,      label: 'Problems Solved',   value: loading ? '...' : (progressData?.totalCompleted || 0),           color: '#a78bfa', bg: 'rgba(139,92,246,0.12)', link: '/dsa' },
+    { icon: TrendingUp, label: 'Overall Progress',   value: loading ? '...' : `${progressData?.overallPercentage || 0}%`,  color: '#60a5fa', bg: 'rgba(96,165,250,0.12)',  link: '/dsa' },
     { icon: Briefcase,  label: 'Portfolio',          value: 'Build Now',                                  color: '#22d3ee', bg: 'rgba(34,211,238,0.12)',  link: '/portfolio' },
     { icon: Clock,      label: 'Trial Days Left',    value: trialRemaining,                               color: trialRemaining <= 5 ? '#f87171' : '#4ade80', bg: trialRemaining <= 5 ? 'rgba(248,113,113,0.12)' : 'rgba(74,222,128,0.12)' },
   ];
