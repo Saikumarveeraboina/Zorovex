@@ -7,7 +7,9 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  
 });
+console.log("USING API:", 'https://zorovex.onrender.com/api');
 
 // Request interceptor — attach token
 api.interceptors.request.use(
