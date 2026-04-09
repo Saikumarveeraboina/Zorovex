@@ -41,6 +41,10 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    proTrialEnd: {
+      type: Date,
+      default: () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    },
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date },
   },

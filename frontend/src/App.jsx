@@ -1,23 +1,29 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import MainLayout from './layouts/MainLayout';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import ScrollHandler from './components/common/ScrollHandler';
+import LoadingSpinner from './components/common/LoadingSpinner';
 
+// Eagerly loaded (common entry points)
 import Home from './pages/Home';
 import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import DSA from './pages/DSA';
-import Portfolio from './pages/Portfolio';
-import PublicPortfolio from './pages/PublicPortfolio';
-import Contact from './pages/Contact';
-import PrivacyPolicy from './pages/PrivacyPolicy';
-import TermsOfService from './pages/TermsOfService';
-import RefundPolicy from './pages/RefundPolicy';
-import AdminDashboard from './pages/AdminDashboard';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
+
+// Lazy-loaded (code-split for performance)
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const DSA = lazy(() => import('./pages/DSA'));
+const Portfolio = lazy(() => import('./pages/Portfolio'));
+const PublicPortfolio = lazy(() => import('./pages/PublicPortfolio'));
+const Contact = lazy(() => import('./pages/Contact'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const TermsOfService = lazy(() => import('./pages/TermsOfService'));
+const RefundPolicy = lazy(() => import('./pages/RefundPolicy'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const Jobs = lazy(() => import('./pages/Jobs'));
 
 function App() {
   return (
@@ -44,37 +50,42 @@ function App() {
           }}
         />
 
-        <Routes>
-          <Route element={<MainLayout />}>
-            {/* Public */}
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-            <Route path="/terms-of-service" element={<TermsOfService />} />
-            <Route path="/refund-policy" element={<RefundPolicy />} />
-            <Route path="/p/:slug" element={<PublicPortfolio />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
+        <Suspense fallback={<LoadingSpinner fullPage />}>
+          <Routes>
+            <Route element={<MainLayout />}>
+              {/* Public */}
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/terms-of-service" element={<TermsOfService />} />
+              <Route path="/refund-policy" element={<RefundPolicy />} />
+              <Route path="/p/:slug" element={<PublicPortfolio />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
 
-            {/* Protected */}
-            <Route path="/dashboard" element={
-              <ProtectedRoute><Dashboard /></ProtectedRoute>
-            } />
-            <Route path="/dsa" element={
-              <ProtectedRoute><DSA /></ProtectedRoute>
-            } />
-            <Route path="/portfolio" element={
-              <ProtectedRoute><Portfolio /></ProtectedRoute>
-            } />
-            <Route path="/admin" element={
-              <ProtectedRoute><AdminDashboard /></ProtectedRoute>
-            } />
+              {/* Protected */}
+              <Route path="/dashboard" element={
+                <ProtectedRoute><Dashboard /></ProtectedRoute>
+              } />
+              <Route path="/dsa" element={
+                <ProtectedRoute><DSA /></ProtectedRoute>
+              } />
+              <Route path="/portfolio" element={
+                <ProtectedRoute><Portfolio /></ProtectedRoute>
+              } />
+              <Route path="/jobs" element={
+                <ProtectedRoute><Jobs /></ProtectedRoute>
+              } />
+              <Route path="/admin" element={
+                <ProtectedRoute><AdminDashboard /></ProtectedRoute>
+              } />
 
-            {/* Catch-all */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Route>
-        </Routes>
+              {/* Catch-all */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </AuthProvider>
   );

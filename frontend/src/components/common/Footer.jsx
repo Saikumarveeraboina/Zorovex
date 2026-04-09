@@ -1,5 +1,6 @@
-import { Zap, GitBranch, MessageCircle, Globe, Mail } from 'lucide-react';
+import { GitBranch, MessageCircle, Globe, Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import logoImg from '../../assets/logo.png';
 
 const InstagramIcon = ({ size = 20, color = "currentColor", ...props }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -16,9 +17,15 @@ const Footer = () => (
         {/* Brand */}
         <div className="col-12 col-md-4">
           <Link to="/" className="d-flex align-items-center gap-2 text-decoration-none mb-3">
-            <div className="navbar-brand-logo" style={{ width: 34, height: 34 }}>
-              <Zap size={16} color="#fff" fill="#fff" />
-            </div>
+            <img
+              src={logoImg}
+              alt="Zorovex"
+              style={{
+                width: 34, height: 34, borderRadius: '50%',
+                objectFit: 'cover', background: '#fff',
+                border: '2px solid rgba(139,92,246,0.3)',
+              }}
+            />
             <span style={{ fontSize: 18, fontWeight: 800, fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
               <span className="gradient-text">Zorovex</span>
             </span>

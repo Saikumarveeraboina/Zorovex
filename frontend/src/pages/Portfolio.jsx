@@ -10,7 +10,7 @@ import PortfolioPreview from '../components/portfolio/PortfolioPreview';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 
 const Portfolio = () => {
-  const { user } = useAuth();
+  const { user, isProActive } = useAuth();
   const [templateId, setTemplateId] = useState(1);
   const [portfolio, setPortfolio] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -25,7 +25,7 @@ const Portfolio = () => {
       .finally(() => setLoading(false));
   }, [user.id]);
 
-  const unlockedTemplates = user?.isPro ? [1, 2, 3] : (portfolio?.unlockedTemplates || [1]);
+  const unlockedTemplates = isProActive ? [1, 2, 3] : (portfolio?.unlockedTemplates || [1]);
 
   const handleSave = async (formData) => {
     // Check if selected template is locked
@@ -102,7 +102,7 @@ const Portfolio = () => {
   };
 
   const portfolioUrl = portfolio?.publicSlug
-    ? `${window.location.origin}/portfolio/view/${portfolio.publicSlug}`
+    ? `${window.location.origin}/p/${portfolio.publicSlug}`
     : null;
 
   const handleCopyUrl = () => {

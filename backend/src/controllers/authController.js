@@ -79,6 +79,7 @@ export const verifyOtpAndRegister = async (req, res, next) => {
         email: user.email,
         trialStart: user.trialStart,
         isPro: user.isPro,
+        proTrialEnd: user.proTrialEnd,
         role: user.role || 'user',
         createdAt: user.createdAt,
       },
@@ -120,6 +121,7 @@ export const login = async (req, res, next) => {
         email: user.email,
         trialStart: user.trialStart,
         isPro: user.isPro,
+        proTrialEnd: user.proTrialEnd,
         role: user.role || 'user',
         createdAt: user.createdAt,
       },
@@ -139,6 +141,7 @@ export const getProfile = async (req, res) => {
     email: user.email,
     trialStart: user.trialStart,
     isPro: user.isPro,
+    proTrialEnd: user.proTrialEnd,
     role: user.role || 'user',
     createdAt: user.createdAt,
   });

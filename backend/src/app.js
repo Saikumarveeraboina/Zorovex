@@ -9,6 +9,7 @@ import portfolioRoutes from './routes/portfolioRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import jobRoutes from './routes/jobRoutes.js';
 import errorHandler from './middlewares/errorHandler.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -59,6 +60,7 @@ app.use('/api/portfolio', portfolioRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/jobs', jobRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

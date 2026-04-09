@@ -1,6 +1,6 @@
 // ── Date & Trial Helpers ─────────────────────────────────────
 
-export const TRIAL_DAYS = 30;
+export const TRIAL_DAYS = 7;
 
 /**
  * Calculate how many trial days are remaining

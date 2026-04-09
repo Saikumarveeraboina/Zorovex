@@ -78,8 +78,11 @@ export const AuthProvider = ({ children }) => {
 
   const isAuthenticated = !!token && !!user;
 
+  // Pro is active only for paid users (trial does NOT grant Pro)
+  const isProActive = !!user?.isPro;
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, isAuthenticated, login, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, token, loading, isAuthenticated, isProActive, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -96,4 +96,16 @@ export const adminAPI = {
   sendWelcomeMails: () => api.post('/admin/send-welcome-mails'),
 };
 
+// ── Jobs ──────────────────────────────
+export const jobAPI = {
+  getAll: (type) => api.get('/jobs', { params: type ? { type } : {} }),
+  apply: (jobId) => api.post(`/jobs/${jobId}/apply`),
+  getMyApplications: () => api.get('/jobs/my-applications'),
+  // Admin
+  adminGetAll: () => api.get('/jobs/admin/all'),
+  create: (data) => api.post('/jobs', data),
+  update: (id, data) => api.put(`/jobs/${id}`, data),
+  delete: (id) => api.delete(`/jobs/${id}`),
+};
+
 export default api;

@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Code2, Briefcase, Clock, TrendingUp, ArrowRight, Calendar, CheckCircle2 } from 'lucide-react';
 import useAuth from '../hooks/useAuth';
 import { dsaAPI } from '../services/api';
-import { getTrialDaysRemaining, getTrialEndDate, getInitials, formatDate } from '../utils/helpers';
+import { getTrialDaysRemaining, getTrialEndDate, getInitials, formatDate, TRIAL_DAYS } from '../utils/helpers';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 
 const companyColors = { TCS: '#3b82f6', Amazon: '#f59e0b', Google: '#10b981', Microsoft: '#a78bfa', Flipkart: '#f472b6' };
@@ -16,7 +16,7 @@ const Dashboard = () => {
 
   const trialRemaining = getTrialDaysRemaining(user?.trialStart);
   const trialEnd = getTrialEndDate(user?.trialStart);
-  const trialPct = Math.round(((30 - trialRemaining) / 30) * 100);
+  const trialPct = Math.round(((TRIAL_DAYS - trialRemaining) / TRIAL_DAYS) * 100);
 
   useEffect(() => {
     dsaAPI.getUserProgress()

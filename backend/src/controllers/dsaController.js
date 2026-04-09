@@ -37,6 +37,7 @@ export const getCompanyProblems = async (req, res) => {
     const completedIds = new Set(userProgress.map((p) => p.problemId));
 
     // Attach completed status to each problem
+    // Free users: first 2 per topic (~100 total across companies). Pro: all unlocked.
     const enriched = {};
     for (const [topic, problems] of Object.entries(dsaData[key])) {
       enriched[topic] = problems.map((p, index) => ({

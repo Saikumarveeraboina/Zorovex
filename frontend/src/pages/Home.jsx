@@ -4,13 +4,13 @@ import { ArrowRight, Code2, Briefcase, TrendingUp, CheckCircle2, Zap, Clock, Sta
 import useAuth from '../hooks/useAuth';
 import { paymentAPI, adminAPI } from '../services/api';
 import toast from 'react-hot-toast';
-import { useState , useEffect} from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 const features = [
   { icon: Code2,       title: 'DSA Practice Paths',  desc: 'Structured problem sets curated for TCS, Amazon, Google, Microsoft, and Flipkart interviews.',        color: '#a78bfa', bg: 'rgba(139,92,246,0.1)' },
   { icon: TrendingUp,  title: 'Progress Tracking',    desc: 'Track completion per topic and company. See your % progress and stay motivated.',                     color: '#60a5fa', bg: 'rgba(96,165,250,0.1)' },
   { icon: Briefcase,   title: 'Portfolio Builder',    desc: '3 stunning templates to showcase your skills, projects, education, and certificates — with a live URL.', color: '#22d3ee', bg: 'rgba(34,211,238,0.1)' },
-  { icon: Clock,       title: '30-Day Free Trial',    desc: 'Get full access to all features for 30 days. No credit card required. Upgrade anytime.',              color: '#f472b6', bg: 'rgba(244,114,182,0.1)' },
+  { icon: Clock,       title: 'Free to Start',        desc: 'Explore 100+ DSA problems and basic portfolio template free. Upgrade to Pro for full access.',         color: '#f472b6', bg: 'rgba(244,114,182,0.1)' },
 ];
 
 const companies = [
@@ -22,16 +22,16 @@ const stats = [
   { value: '5+',   label: 'Target Companies' },
   { value: '600+', label: 'Curated Problems' },
   { value: '3',    label: 'Portfolio Templates' },
-  { value: '30',   label: 'Days Free Trial' },
+  { value: '100+',  label: 'Free Problems' },
 ];
 
 const freeItems = [
-  'Access to 50+ Easy DSA problems',
+  '100+ DSA problems free',
   'Basic progress tracking',
-  'Base Portfolio Template (FREE)',
+  'Basic Portfolio Template',
   'Resume Auto-Extraction',
   'Unique Live Portfolio URL',
-  '30-day trial period',
+  'Explore & learn free forever',
 ];
 
 const proItems = [
@@ -44,7 +44,7 @@ const proItems = [
 ];
 
 const Home = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, isProActive, user } = useAuth();
   const navigate = useNavigate();
   const [upgrading, setUpgrading] = useState(false);
   
@@ -53,11 +53,25 @@ const Home = () => {
   const [discount, setDiscount] = useState(0);
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [couponSuccess, setCouponSuccess] = useState(false);
+  const pricingRef = useRef(null);
 
+  // Defer settings API call until pricing section is visible
   useEffect(() => {
-    adminAPI.getSettings()
-      .then(res => res.data?.proPrice && setBasePrice(res.data.proPrice))
-      .catch(console.error);
+    const el = pricingRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          adminAPI.getSettings()
+            .then(res => res.data?.proPrice && setBasePrice(res.data.proPrice))
+            .catch(() => {});
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
   const handleApplyCoupon = async () => {
@@ -134,7 +148,7 @@ const Home = () => {
             <div className="hero-pill">
               <span className="pulse-dot" />
               <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--purple-400)' }}>
-                🚀 30-Day Free Trial — No Credit Card Required
+                🚀 7-Day Free Pro Trial — Explore Now
               </span>
             </div>
 
@@ -236,7 +250,7 @@ const Home = () => {
       </section>
 
       {/* ── Pricing ──────────────────────────────────────── */}
-      <section id="pricing" className="py-5">
+      <section id="pricing" className="py-5" ref={pricingRef}>
         <div className="container">
           <div className="text-center mb-5">
             <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
@@ -264,13 +278,13 @@ const Home = () => {
                     </li>
                   ))}
                 </ul>
-                {isAuthenticated && !user.isPro ? (
+                {isAuthenticated && !isProActive ? (
                   <button className="btn-secondary-zrv w-100 justify-content-center" style={{ padding: '14px', fontSize: 15 }} disabled>
                     Current Plan
                   </button>
                 ) : (
-                  <Link to="/login?tab=register" className="btn-secondary-zrv w-100 justify-content-center" style={{ padding: '14px', fontSize: 15, display: isAuthenticated ? 'none' : 'flex' }}>
-                    Start Free Trial
+                  <Link to="/login?tab=register" className="btn-secondary-zrv w-100 justify-content-center" style={{ padding: '14px', fontSize: 15 }}>
+                    Get Started Free <ArrowRight size={16} />
                   </Link>
                 )}
               </motion.div>
@@ -281,7 +295,7 @@ const Home = () => {
               <motion.div className="pricing-card" style={{ padding: '40px 30px', height: '100%', position: 'relative', border: '1px solid rgba(167,139,250,0.5)', background: 'rgba(139,92,246,0.05)', boxShadow: '0 0 40px rgba(139,92,246,0.1)' }}
                 initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: 0.1 }}>
                 
-                {(!isAuthenticated || !user.isPro) && (
+                {(!isAuthenticated || !isProActive) && (
                   <div style={{ position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg,#7c3aed,#3b82f6)', padding: '5px 16px', borderRadius: 999, fontSize: 11, fontWeight: 800, color: '#fff', letterSpacing: '0.05em' }}>
                     RECOMMENDED
                   </div>
@@ -306,7 +320,7 @@ const Home = () => {
                   ))}
                 </ul>
                 
-                {isAuthenticated && !user?.isPro && (
+                {isAuthenticated && !isProActive && (
                   <div className="mb-4">
                     <div className="d-flex gap-2">
                        <input 
@@ -344,14 +358,18 @@ const Home = () => {
                   </div>
                 )}
                 
-                {isAuthenticated && user?.isPro ? (
+                {isAuthenticated && isProActive ? (
                   <button className="btn-secondary-zrv w-100 justify-content-center" style={{ padding: '14px', fontSize: 15, background: 'rgba(34,197,94,0.1)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.3)' }} disabled>
                     <CheckCircle2 size={16} /> Pro Active
                   </button>
-                ) : (
+                ) : isAuthenticated ? (
                   <button onClick={handleUpgrade} disabled={upgrading} className="btn-primary-zrv w-100 justify-content-center" style={{ padding: '14px', fontSize: 15, fontWeight: 700 }}>
                     {upgrading ? 'Connecting to payment...' : <><LockOpen size={16} /> Upgrade to Pro</>}
                   </button>
+                ) : (
+                  <Link to="/login?tab=register" className="btn-primary-zrv w-100 justify-content-center" style={{ padding: '14px', fontSize: 15, fontWeight: 700 }}>
+                    <LockOpen size={16} /> Get Started & Upgrade
+                  </Link>
                 )}
               </motion.div>
             </div>

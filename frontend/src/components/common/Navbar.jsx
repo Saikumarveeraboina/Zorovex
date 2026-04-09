@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap, Menu, X, LogOut, LayoutDashboard, Code2, Briefcase } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, Code2, Briefcase, Building2 } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 import { getInitials } from '../../utils/helpers';
+import logoImg from '../../assets/logo.png';
 
 const Navbar = () => {
   const { isAuthenticated, user, logout } = useAuth();
@@ -27,6 +28,7 @@ const Navbar = () => {
         { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { to: '/dsa',       label: 'DSA',       icon: Code2 },
         { to: '/portfolio', label: 'Portfolio',  icon: Briefcase },
+        { to: '/jobs',      label: 'Jobs',       icon: Building2 },
         { to: '/contact',   label: 'Contact',    icon: null },
       ]
     : [
@@ -42,9 +44,16 @@ const Navbar = () => {
           <div className="d-flex align-items-center justify-content-between w-100">
             {/* Logo */}
             <Link to="/" className="d-flex align-items-center gap-2 text-decoration-none">
-              <div className="navbar-brand-logo">
-                <Zap size={18} color="#fff" fill="#fff" />
-              </div>
+              <img
+                src={logoImg}
+                alt="Zorovex"
+                style={{
+                  width: 34, height: 34, borderRadius: '50%',
+                  objectFit: 'cover', background: '#fff',
+                  border: '2px solid rgba(139,92,246,0.3)',
+                  boxShadow: '0 2px 10px rgba(124,58,237,0.25)',
+                }}
+              />
               <span style={{ fontSize: 20, fontWeight: 800, fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
                 <span className="gradient-text">Zorovex</span>
               </span>
