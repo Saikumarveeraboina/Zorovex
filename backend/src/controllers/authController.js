@@ -38,9 +38,8 @@ export const sendOtp = async (req, res, next) => {
 
     res.json({ message: `OTP sent to ${email}. Please check your inbox.` });
   } catch (error) {
-    console.error(`[send-otp] ❌ Failed for ${email}:`, error.message);
+    console.error(`[send-otp] ❌ Failed:`, error.message);
     console.error(`[send-otp] Error code:`, error.code);
-    console.error(`[send-otp] Error response:`, error.response);
     next(error);
   }
 };
