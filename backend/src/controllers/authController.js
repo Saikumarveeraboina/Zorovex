@@ -32,10 +32,15 @@ export const sendOtp = async (req, res, next) => {
     }
 
     const otp = createPendingRegistration(email, { name, password });
+    console.log(`[send-otp] Generated OTP for ${email}, attempting to send email...`);
     await sendOtpEmail(email, name, otp);
+    console.log(`[send-otp] ✅ OTP email sent successfully to ${email}`);
 
     res.json({ message: `OTP sent to ${email}. Please check your inbox.` });
   } catch (error) {
+    console.error(`[send-otp] ❌ Failed for ${email}:`, error.message);
+    console.error(`[send-otp] Error code:`, error.code);
+    console.error(`[send-otp] Error response:`, error.response);
     next(error);
   }
 };
