@@ -1,11 +1,20 @@
 import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
+
+// ── Dual-mode email transport ─────────────────────────────────
+// Production (Render): Uses Resend HTTP API (SMTP ports are blocked)
+// Local dev:           Uses nodemailer SMTP (Gmail)
+
+const resend = process.env.RESEND_API_KEY
+  ? new Resend(process.env.RESEND_API_KEY)
+  : null;
 
 const createTransporter = () => {
   const port = parseInt(process.env.EMAIL_PORT || '587');
   return nodemailer.createTransport({
     host: process.env.EMAIL_HOST || 'smtp.gmail.com',
     port,
-    secure: port === 465, // true for 465 (SSL), false for 587 (STARTTLS)
+    secure: port === 465,
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
@@ -16,11 +25,36 @@ const createTransporter = () => {
   });
 };
 
-export const sendOtpEmail = async (email, name, otp) => {
-  try {
+/**
+ * Send an email using Resend (production) or nodemailer (local dev).
+ */
+const sendEmail = async ({ to, subject, html }) => {
+  if (resend) {
+    // Production — use Resend HTTP API
+    const { error } = await resend.emails.send({
+      from: process.env.RESEND_FROM || 'Zorovex <onboarding@resend.dev>',
+      to,
+      subject,
+      html,
+    });
+    if (error) throw new Error(error.message);
+  } else {
+    // Local dev — use nodemailer SMTP
     const transporter = createTransporter();
     await transporter.sendMail({
       from: process.env.EMAIL_FROM,
+      to,
+      subject,
+      html,
+    });
+  }
+};
+
+// ── Email templates ───────────────────────────────────────────
+
+export const sendOtpEmail = async (email, name, otp) => {
+  try {
+    await sendEmail({
       to: email,
       subject: `${otp} is your Zorovex verification code`,
       html: `
@@ -40,15 +74,13 @@ export const sendOtpEmail = async (email, name, otp) => {
     console.log(`📧 OTP email sent to ${email}`);
   } catch (err) {
     console.warn(`⚠️ Failed to send OTP email to ${email}: ${err.message}`);
-    throw err; // Re-throw so the controller can respond with an error
+    throw err;
   }
 };
 
 export const sendWelcomeEmail = async (email, name) => {
   try {
-    const transporter = createTransporter();
-    await transporter.sendMail({
-      from: process.env.EMAIL_FROM,
+    await sendEmail({
       to: email,
       subject: '🎉 Welcome to Zorovex!',
       html: `
@@ -72,9 +104,7 @@ export const sendWelcomeEmail = async (email, name) => {
 
 export const sendLoginEmail = async (email, name) => {
   try {
-    const transporter = createTransporter();
-    await transporter.sendMail({
-      from: process.env.EMAIL_FROM,
+    await sendEmail({
       to: email,
       subject: '👋 New Login to Zorovex Account',
       html: `
@@ -94,9 +124,7 @@ export const sendLoginEmail = async (email, name) => {
 
 export const sendPasswordResetEmail = async (email, name, resetUrl) => {
   try {
-    const transporter = createTransporter();
-    await transporter.sendMail({
-      from: process.env.EMAIL_FROM,
+    await sendEmail({
       to: email,
       subject: '🔑 Reset your Zorovex password',
       html: `
@@ -119,4 +147,3 @@ export const sendPasswordResetEmail = async (email, name, resetUrl) => {
     throw err;
   }
 };
-
