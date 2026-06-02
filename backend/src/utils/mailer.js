@@ -1,18 +1,20 @@
 import nodemailer from 'nodemailer';
 
-const createTransporter = () =>
-  nodemailer.createTransport({
+const createTransporter = () => {
+  const port = parseInt(process.env.EMAIL_PORT || '587');
+  return nodemailer.createTransport({
     host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.EMAIL_PORT || '465'),
-    secure: true, // use SSL (port 465) instead of STARTTLS (port 587)
+    port,
+    secure: port === 465, // true for 465 (SSL), false for 587 (STARTTLS)
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
-    connectionTimeout: 10000, // 10s connection timeout
+    connectionTimeout: 10000,
     greetingTimeout: 10000,
     socketTimeout: 15000,
   });
+};
 
 export const sendOtpEmail = async (email, name, otp) => {
   try {
