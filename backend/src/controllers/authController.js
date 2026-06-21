@@ -39,8 +39,12 @@ export const sendOtp = async (req, res, next) => {
     res.json({ message: `OTP sent to ${email}. Please check your inbox.` });
   } catch (error) {
     console.error(`[send-otp] ❌ Failed:`, error.message);
-    console.error(`[send-otp] Error code:`, error.code);
-    next(error);
+    console.error(`[send-otp] Error code:`, error.code || 'N/A');
+    // Return user-friendly message with correct status code
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({
+      message: error.message || 'Failed to send OTP. Please try again later.',
+    });
   }
 };
 

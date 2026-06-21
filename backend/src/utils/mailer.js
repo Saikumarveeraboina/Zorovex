@@ -1,16 +1,36 @@
 import nodemailer from 'nodemailer';
-import { Resend } from 'resend';
 
 // ── Dual-mode email transport ─────────────────────────────────
-// Production (Render): Uses Resend HTTP API (SMTP ports are blocked)
-// Local dev:           Uses nodemailer SMTP (Gmail)
-
-const resend = process.env.RESEND_API_KEY
-  ? new Resend(process.env.RESEND_API_KEY)
-  : null;
+// Production (Render): Uses Brevo SMTP (allowed through Render's network)
+// Local dev:           Uses Gmail SMTP directly
 
 const createTransporter = () => {
+  // If Brevo SMTP key is set, use Brevo SMTP (works on Render — not blocked like Gmail SMTP)
+  if (process.env.BREVO_SMTP_KEY) {
+    console.log('[mailer] Using Brevo SMTP transport');
+    return nodemailer.createTransport({
+      host: 'smtp-relay.brevo.com',
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.BREVO_SMTP_LOGIN, // your Brevo login email
+        pass: process.env.BREVO_SMTP_KEY,   // Brevo SMTP key
+      },
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 20000,
+    });
+  }
+
+  // Warn if running on Render without Brevo — Gmail SMTP will be blocked
+  if (process.env.RENDER || process.env.NODE_ENV === 'production') {
+    console.warn('⚠️  [mailer] WARNING: No BREVO_SMTP_KEY set! Gmail SMTP is blocked on Render.');
+    console.warn('⚠️  [mailer] Set BREVO_SMTP_KEY and BREVO_SMTP_LOGIN in your Render environment.');
+  }
+
+  // Local dev — use Gmail SMTP
   const port = parseInt(process.env.EMAIL_PORT || '587');
+  console.log(`[mailer] Using Gmail SMTP transport (${process.env.EMAIL_HOST || 'smtp.gmail.com'}:${port})`);
   return nodemailer.createTransport({
     host: process.env.EMAIL_HOST || 'smtp.gmail.com',
     port,
@@ -19,34 +39,35 @@ const createTransporter = () => {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000,
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 20000,
   });
 };
 
-/**
- * Send an email using Resend (production) or nodemailer (local dev).
- */
-const sendEmail = async ({ to, subject, html }) => {
-  if (resend) {
-    // Production — use Resend HTTP API
-    const { error } = await resend.emails.send({
-      from: process.env.RESEND_FROM || 'Zorovex <onboarding@resend.dev>',
-      to,
-      subject,
-      html,
-    });
-    if (error) throw new Error(error.message);
+const getFromAddress = () =>
+  process.env.BREVO_SMTP_KEY
+    ? process.env.BREVO_FROM || process.env.EMAIL_FROM
+    : process.env.EMAIL_FROM;
+
+// ── Startup config check ─────────────────────────────────────
+export const verifyEmailConfig = () => {
+  const isProduction = process.env.RENDER || process.env.NODE_ENV === 'production';
+  if (isProduction && !process.env.BREVO_SMTP_KEY) {
+    console.error('┌──────────────────────────────────────────────────────────┐');
+    console.error('│  ❌ CRITICAL: BREVO_SMTP_KEY is NOT set!                │');
+    console.error('│  Gmail SMTP is BLOCKED on Render.                       │');
+    console.error('│  OTP / Welcome / Login emails will ALL FAIL.            │');
+    console.error('│                                                         │');
+    console.error('│  Fix: Set these in Render Environment Variables:        │');
+    console.error('│    BREVO_SMTP_LOGIN = your-brevo-login@email.com        │');
+    console.error('│    BREVO_SMTP_KEY   = your-brevo-smtp-key               │');
+    console.error('│    BREVO_FROM       = Zorovex <noreply@yourdomain.com>  │');
+    console.error('└──────────────────────────────────────────────────────────┘');
+  } else if (isProduction) {
+    console.log('✅ [mailer] Brevo SMTP configured for production.');
   } else {
-    // Local dev — use nodemailer SMTP
-    const transporter = createTransporter();
-    await transporter.sendMail({
-      from: process.env.EMAIL_FROM,
-      to,
-      subject,
-      html,
-    });
+    console.log(`✅ [mailer] Gmail SMTP configured for local dev (${process.env.EMAIL_USER || 'NOT SET'})`);
   }
 };
 
@@ -54,7 +75,13 @@ const sendEmail = async ({ to, subject, html }) => {
 
 export const sendOtpEmail = async (email, name, otp) => {
   try {
-    await sendEmail({
+    const fromAddress = getFromAddress();
+    if (!fromAddress) {
+      throw new Error('Email FROM address is not configured. Check EMAIL_FROM or BREVO_FROM env var.');
+    }
+    const transporter = createTransporter();
+    await transporter.sendMail({
+      from: fromAddress,
       to: email,
       subject: `${otp} is your Zorovex verification code`,
       html: `
@@ -73,14 +100,26 @@ export const sendOtpEmail = async (email, name, otp) => {
     });
     console.log(`📧 OTP email sent to ${email}`);
   } catch (err) {
-    console.warn(`⚠️ Failed to send OTP email to ${email}: ${err.message}`);
-    throw err;
+    console.error(`❌ [sendOtpEmail] Failed for ${email}:`, err.message);
+    console.error(`❌ [sendOtpEmail] Error code: ${err.code || 'N/A'}, command: ${err.command || 'N/A'}`);
+
+    // Give a user-friendly message instead of raw SMTP error
+    const isSmtpBlocked = err.code === 'ESOCKET' || err.code === 'ECONNECTION' || err.code === 'ETIMEDOUT' || err.code === 'ECONNREFUSED';
+    const userMessage = isSmtpBlocked
+      ? 'Email service is temporarily unavailable. Please try again in a few minutes.'
+      : 'Failed to send verification email. Please try again.';
+
+    const error = new Error(userMessage);
+    error.statusCode = 503;
+    throw error;
   }
 };
 
 export const sendWelcomeEmail = async (email, name) => {
   try {
-    await sendEmail({
+    const transporter = createTransporter();
+    await transporter.sendMail({
+      from: getFromAddress(),
       to: email,
       subject: '🎉 Welcome to Zorovex!',
       html: `
@@ -104,7 +143,9 @@ export const sendWelcomeEmail = async (email, name) => {
 
 export const sendLoginEmail = async (email, name) => {
   try {
-    await sendEmail({
+    const transporter = createTransporter();
+    await transporter.sendMail({
+      from: getFromAddress(),
       to: email,
       subject: '👋 New Login to Zorovex Account',
       html: `
@@ -124,7 +165,9 @@ export const sendLoginEmail = async (email, name) => {
 
 export const sendPasswordResetEmail = async (email, name, resetUrl) => {
   try {
-    await sendEmail({
+    const transporter = createTransporter();
+    await transporter.sendMail({
+      from: getFromAddress(),
       to: email,
       subject: '🔑 Reset your Zorovex password',
       html: `
