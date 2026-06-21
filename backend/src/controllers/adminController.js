@@ -1,7 +1,6 @@
 import Settings from '../models/Settings.js';
 import Coupon from '../models/Coupon.js';
 import User from '../models/User.js';
-import { sendWelcomeEmail } from '../utils/mailer.js';
 
 export const getSettings = async (req, res) => {
   try {
@@ -68,19 +67,3 @@ export const validateCoupon = async (req, res) => {
   }
 };
 
-export const sendBulkWelcomeMails = async (req, res) => {
-  try {
-    const users = await User.find({}, 'name email');
-    if (!users.length) {
-      return res.json({ message: 'No users found in database.', sent: 0 });
-    }
-
-    // Send emails concurrently (non-blocking per user, but wait for all)
-    await Promise.all(users.map((u) => sendWelcomeEmail(u.email, u.name)));
-
-    console.log(`📢 Bulk welcome emails sent to ${users.length} users.`);
-    res.json({ message: `Welcome emails sent to ${users.length} user(s)!`, sent: users.length });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};

@@ -21,8 +21,6 @@ const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 const RefundPolicy = lazy(() => import('./pages/RefundPolicy'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
-const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
-const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const Jobs = lazy(() => import('./pages/Jobs'));
 
 function App() {
@@ -61,8 +59,6 @@ function App() {
               <Route path="/terms-of-service" element={<TermsOfService />} />
               <Route path="/refund-policy" element={<RefundPolicy />} />
               <Route path="/p/:slug" element={<PublicPortfolio />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
 
               {/* Protected */}
               <Route path="/dashboard" element={

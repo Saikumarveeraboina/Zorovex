@@ -42,12 +42,9 @@ api.interceptors.response.use(
 
 // ── Auth ──────────────────────────────
 export const authAPI = {
-  sendOtp: (data) => api.post('/auth/send-otp', data),       // Step 1
-  verifyOtp: (data) => api.post('/auth/verify-otp', data),   // Step 2
+  register: (data) => api.post('/auth/register', data),
   login: (data) => api.post('/auth/login', data),
   getProfile: () => api.get('/auth/profile'),
-  forgotPassword: (data) => api.post('/auth/forgot-password', data),
-  resetPassword: (data) => api.post('/auth/reset-password', data),
 };
 
 // ── DSA ───────────────────────────────
@@ -93,7 +90,6 @@ export const adminAPI = {
   createCoupon: (data) => api.post('/admin/coupons', data),
   deleteCoupon: (id) => api.delete(`/admin/coupons/${id}`),
   validateCoupon: (code) => api.post('/admin/validate-coupon', { code }),
-  sendWelcomeMails: () => api.post('/admin/send-welcome-mails'),
 };
 
 // ── Jobs ──────────────────────────────

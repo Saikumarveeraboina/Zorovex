@@ -13,7 +13,6 @@ const AdminDashboard = () => {
     const [coupons, setCoupons] = useState([]);
     const [newCoupon, setNewCoupon] = useState({ code: '', discountPercentage: '' });
     const [fetching, setFetching] = useState(true);
-    const [sendingMails, setSendingMails] = useState(false);
 
     // Jobs state
     const [jobs, setJobs] = useState([]);
@@ -87,18 +86,7 @@ const AdminDashboard = () => {
         }
     };
 
-    const handleSendWelcomeMails = async () => {
-        if (!window.confirm('Send welcome emails to ALL registered users? This cannot be undone.')) return;
-        setSendingMails(true);
-        try {
-            const res = await adminAPI.sendWelcomeMails();
-            toast.success(res.data.message || 'Emails sent!');
-        } catch (err) {
-            toast.error(err.response?.data?.message || 'Failed to send emails');
-        } finally {
-            setSendingMails(false);
-        }
-    };
+
 
     // ── Job Handlers ──────────────────────────
     const handleCreateJob = async (e) => {
@@ -415,29 +403,6 @@ const AdminDashboard = () => {
                             )}
                         </motion.div>
                     </div>
-
-                    {/* Bulk Welcome Email */}
-                    <div className="col-12">
-                        <motion.div className="glass-card p-4" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-                            <h4 style={{ fontWeight: 700, marginBottom: 8 }}>📧 Send Welcome Emails</h4>
-                            <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 20 }}>
-                                Send a Zorovex welcome email to every registered user in the database at once.
-                            </p>
-                            <button
-                                id="btn-send-welcome-mails"
-                                className="btn-primary-zrv py-2 px-4"
-                                onClick={handleSendWelcomeMails}
-                                disabled={sendingMails}
-                                style={{ minWidth: 240, justifyContent: 'center' }}
-                            >
-                                {sendingMails ? (
-                                    <><span className="zrv-spinner-sm me-2" />Sending Emails…</>
-                                ) : (
-                                    <>📨 Send Welcome Mail to All Users</>
-                                )}
-                            </button>
-                        </motion.div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -445,4 +410,3 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-
