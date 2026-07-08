@@ -1,7 +1,45 @@
 import nodemailer from 'nodemailer';
+import axios from 'axios';
 
 const RECEIVER_EMAIL = 'support.zorovex@gmail.com';
 
+// ── Resend HTTP API (works on Render — no SMTP ports needed) ──
+const sendViaResend = async ({ from, to, replyTo, subject, html }) => {
+  const res = await axios.post(
+    'https://api.resend.com/emails',
+    { from, to: [to], reply_to: [replyTo], subject, html },
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      timeout: 15000,
+    }
+  );
+  return res.data;
+};
+
+// ── Gmail SMTP (works locally) ────────────────────────────────
+const sendViaGmail = async ({ from, to, replyTo, subject, html }) => {
+  const transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+    tls: { rejectUnauthorized: false },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
+  });
+
+  const info = await transporter.sendMail({ from, to, replyTo, subject, html });
+  return { id: info.messageId };
+};
+
+// ── Contact form handler ──────────────────────────────────────
 export const sendContactMessage = async (req, res, next) => {
   try {
     const { name, email, subject, message } = req.body;
@@ -10,75 +48,18 @@ export const sendContactMessage = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Name, email, and message are required' });
     }
 
-    // Log which env vars are available (without values) for debugging
+    // Log available providers (no secrets)
     console.log('[Contact] Environment check:', {
+      hasResendKey: !!process.env.RESEND_API_KEY,
+      hasResendFrom: !!process.env.RESEND_FROM,
       hasEmailUser: !!process.env.EMAIL_USER,
       hasEmailPass: !!process.env.EMAIL_PASS,
-      hasBrevoKey: !!process.env.BREVO_SMTP_KEY,
-      hasBrevoLogin: !!process.env.BREVO_SMTP_LOGIN,
       hasReceiverEmail: !!process.env.RECEIVER_EMAIL,
     });
 
-    // Build transporter — always use Gmail SMTP for contact form
-    // Gmail App Passwords work reliably from any server
-    let transporter;
-
-    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-      // Primary: Gmail SMTP (works in both local dev and production)
-      console.log('[Contact] Using Gmail SMTP');
-      transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 465,
-        secure: true,
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS,
-        },
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 15000,
-      });
-    } else if (process.env.BREVO_SMTP_KEY && process.env.BREVO_SMTP_LOGIN) {
-      // Fallback: Brevo SMTP
-      console.log('[Contact] Using Brevo SMTP');
-      transporter = nodemailer.createTransport({
-        host: 'smtp-relay.brevo.com',
-        port: 587,
-        secure: false,
-        auth: {
-          user: process.env.BREVO_SMTP_LOGIN,
-          pass: process.env.BREVO_SMTP_KEY,
-        },
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 15000,
-      });
-    } else {
-      console.error('[Contact] ❌ No email credentials configured');
-      return res.status(500).json({
-        success: false,
-        message: 'Email service is not configured on the server.',
-      });
-    }
-
-    // Verify SMTP connection before sending
-    try {
-      await transporter.verify();
-      console.log('[Contact] ✅ SMTP connection verified');
-    } catch (verifyErr) {
-      console.error('[Contact] ❌ SMTP verification failed:', verifyErr.message);
-      return res.status(500).json({
-        success: false,
-        message: 'Email server connection failed. Please try again later.',
-        error: verifyErr.message,
-      });
-    }
-
     const toAddress = process.env.RECEIVER_EMAIL || RECEIVER_EMAIL;
-    const fromAddress = process.env.EMAIL_FROM || `"${name}" <${process.env.EMAIL_USER || process.env.BREVO_SMTP_LOGIN}>`;
-
-    const mailOptions = {
-      from: fromAddress,
+    const emailPayload = {
+      from: process.env.RESEND_FROM || process.env.EMAIL_FROM || `"${name}" <${process.env.EMAIL_USER}>`,
       to: toAddress,
       replyTo: email,
       subject: `New Contact Request: ${subject || 'No Subject'} - ${name}`,
@@ -112,16 +93,44 @@ export const sendContactMessage = async (req, res, next) => {
       `,
     };
 
-    console.log(`[Contact] 📧 Sending to ${toAddress} from ${fromAddress}`);
+    let result;
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`[Contact] ✅ Email sent. MessageId: ${info.messageId}`);
+    // Strategy 1: Resend API (best for production — HTTP-based, no SMTP port issues)
+    if (process.env.RESEND_API_KEY) {
+      console.log(`[Contact] 📧 Using Resend API → sending to ${toAddress}`);
+      try {
+        result = await sendViaResend(emailPayload);
+        console.log(`[Contact] ✅ Resend success. ID: ${result.id}`);
+        return res.status(200).json({ success: true, message: 'Message sent successfully' });
+      } catch (resendErr) {
+        console.error('[Contact] ❌ Resend failed:', resendErr.response?.data || resendErr.message);
+        // Fall through to Gmail
+      }
+    }
 
-    res.status(200).json({ success: true, message: 'Message sent successfully' });
+    // Strategy 2: Gmail SMTP (fallback / local dev)
+    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+      console.log(`[Contact] 📧 Using Gmail SMTP → sending to ${toAddress}`);
+      // For Gmail SMTP, from must be the authenticated user
+      emailPayload.from = process.env.EMAIL_FROM || `"${name}" <${process.env.EMAIL_USER}>`;
+      try {
+        result = await sendViaGmail(emailPayload);
+        console.log(`[Contact] ✅ Gmail success. MessageId: ${result.id}`);
+        return res.status(200).json({ success: true, message: 'Message sent successfully' });
+      } catch (gmailErr) {
+        console.error('[Contact] ❌ Gmail SMTP failed:', gmailErr.message);
+      }
+    }
+
+    // Both methods failed or no credentials
+    console.error('[Contact] ❌ All email methods failed');
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to send message. Please try again later.',
+    });
   } catch (error) {
-    console.error('[Contact] ❌ Email error:', error.message);
+    console.error('[Contact] ❌ Unexpected error:', error.message);
     console.error('[Contact] Stack:', error.stack);
     res.status(500).json({ success: false, message: 'Failed to send message', error: error.message });
   }
 };
-
