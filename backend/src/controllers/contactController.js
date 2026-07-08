@@ -94,6 +94,7 @@ export const sendContactMessage = async (req, res, next) => {
     };
 
     let result;
+    const errors = [];
 
     // Strategy 1: Resend API (best for production — HTTP-based, no SMTP port issues)
     if (process.env.RESEND_API_KEY) {
@@ -103,7 +104,9 @@ export const sendContactMessage = async (req, res, next) => {
         console.log(`[Contact] ✅ Resend success. ID: ${result.id}`);
         return res.status(200).json({ success: true, message: 'Message sent successfully' });
       } catch (resendErr) {
-        console.error('[Contact] ❌ Resend failed:', resendErr.response?.data || resendErr.message);
+        const resendError = resendErr.response?.data || resendErr.message;
+        console.error('[Contact] ❌ Resend failed:', resendError);
+        errors.push({ provider: 'Resend', error: resendError });
         // Fall through to Gmail
       }
     }
@@ -119,14 +122,16 @@ export const sendContactMessage = async (req, res, next) => {
         return res.status(200).json({ success: true, message: 'Message sent successfully' });
       } catch (gmailErr) {
         console.error('[Contact] ❌ Gmail SMTP failed:', gmailErr.message);
+        errors.push({ provider: 'Gmail', error: gmailErr.message });
       }
     }
 
     // Both methods failed or no credentials
-    console.error('[Contact] ❌ All email methods failed');
+    console.error('[Contact] ❌ All email methods failed. Errors:', errors);
     return res.status(500).json({
       success: false,
       message: 'Failed to send message. Please try again later.',
+      debug: errors,
     });
   } catch (error) {
     console.error('[Contact] ❌ Unexpected error:', error.message);
