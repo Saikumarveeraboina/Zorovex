@@ -5,9 +5,17 @@ const RECEIVER_EMAIL = 'support.zorovex@gmail.com';
 
 // ── Resend HTTP API (works on Render — no SMTP ports needed) ──
 const sendViaResend = async ({ from, to, replyTo, subject, html }) => {
+  // Resend requires a verified domain for custom 'from' addresses.
+  // Without domain verification, use onboarding@resend.dev
+  const resendFrom = process.env.RESEND_FROM || 'Zorovex <onboarding@resend.dev>';
+  // Without verified domain, Resend only allows sending to account owner email
+  const resendTo = process.env.RESEND_TO || to;
+
+  console.log(`[Contact] Resend payload: from=${resendFrom}, to=${resendTo}`);
+
   const res = await axios.post(
     'https://api.resend.com/emails',
-    { from, to: [to], reply_to: [replyTo], subject, html },
+    { from: resendFrom, to: [resendTo], reply_to: [replyTo], subject, html },
     {
       headers: {
         Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
