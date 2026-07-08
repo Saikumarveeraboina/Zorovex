@@ -4,7 +4,7 @@ import nodemailer from 'nodemailer';
 // Production (Render): Uses Brevo SMTP
 // Local dev:           Uses Gmail SMTP
 
-const createTransporter = () => {
+export const createTransporter = () => {
   if (process.env.BREVO_SMTP_KEY) {
     return nodemailer.createTransport({
       host: 'smtp-relay.brevo.com',

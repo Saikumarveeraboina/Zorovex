@@ -1,4 +1,6 @@
-import nodemailer from 'nodemailer';
+import { createTransporter } from '../utils/mailer.js';
+
+const RECEIVER_EMAIL = 'support.zorovex@gmail.com';
 
 export const sendContactMessage = async (req, res, next) => {
   try {
@@ -9,25 +11,35 @@ export const sendContactMessage = async (req, res, next) => {
     }
 
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      console.error('[Contact] ❌ EMAIL_USER or EMAIL_PASS not set in environment');
       return res.status(500).json({ 
         success: false, 
-        message: 'Email service is not configured on the server. Please check environment variables.' 
+        message: 'Email service is not configured on the server.' 
       });
     }
 
-    // Configure the transporter
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
+    // Use the shared transporter (handles Gmail / Brevo based on env)
+    const transporter = createTransporter();
+
+    // Verify SMTP connection before sending
+    try {
+      await transporter.verify();
+      console.log('[Contact] ✅ SMTP connection verified successfully');
+    } catch (verifyErr) {
+      console.error('[Contact] ❌ SMTP verification failed:', verifyErr.message);
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Email server connection failed. Please try again later.',
+        error: verifyErr.message,
+      });
+    }
+
+    const toAddress = process.env.RECEIVER_EMAIL || RECEIVER_EMAIL;
 
     // Email options
     const mailOptions = {
-      from: `"${name}" <${process.env.EMAIL_USER}>`, 
-      to: process.env.RECEIVER_EMAIL || process.env.EMAIL_USER, // receiver, defaults to the sender itself
+      from: process.env.EMAIL_FROM || `"${name}" <${process.env.EMAIL_USER}>`,
+      to: toAddress,
       replyTo: email,
       subject: `New Contact Request: ${subject || 'No Subject'} - ${name}`,
       html: `
@@ -60,12 +72,16 @@ export const sendContactMessage = async (req, res, next) => {
       `,
     };
 
+    console.log(`[Contact] 📧 Sending contact email from "${name}" <${email}> to ${toAddress}`);
+
     // Send email
-    await transporter.sendMail(mailOptions);
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`[Contact] ✅ Email sent successfully. MessageId: ${info.messageId}`);
 
     res.status(200).json({ success: true, message: 'Message sent successfully' });
   } catch (error) {
-    console.error('Email sending error:', error);
+    console.error('[Contact] ❌ Email sending error:', error.message);
+    console.error('[Contact] Full error:', error);
     res.status(500).json({ success: false, message: 'Failed to send message', error: error.message });
   }
 };
